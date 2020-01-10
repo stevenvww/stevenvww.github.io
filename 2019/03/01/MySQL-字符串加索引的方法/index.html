@@ -83,7 +83,7 @@
     </div>
     
         <div id="toc" class="toc-article">
-    <ol class="toc"><li class="toc-item toc-level-3"><a class="toc-link" href="#1完整索引"><span class="toc-text"> １．完整索引</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-前缀索引"><span class="toc-text"> ２． 前缀索引</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-其他方式"><span class="toc-text"> 3. 其他方式</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#总结"><span class="toc-text"> 总结</span></a></li></ol>
+    <ol class="toc"><li class="toc-item toc-level-3"><a class="toc-link" href="#１．完整索引"><span class="toc-text">１．完整索引</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#２．-前缀索引"><span class="toc-text">２． 前缀索引</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-其他方式"><span class="toc-text">3. 其他方式</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#总结"><span class="toc-text">总结</span></a></li></ol>
 </div>
     
 </div>
@@ -137,27 +137,25 @@
 <p>由于使用邮箱登录，登录的时候一定要根据邮箱去查询。所以业务代码一定会出现一下语句：</p>
 <figure class="highlight cs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; <span class="keyword">select</span> ID, email <span class="keyword">from</span> SUser <span class="keyword">where</span> email=<span class="string">'zhangssxyz@xxx.com'</span>;</span><br></pre></td></tr></table></figure>
 <p>因此 email 字段必须加上索引，否则这个语句会做全表扫描。</p>
-<h3 id="1完整索引"><a class="markdownIt-Anchor" href="#1完整索引"></a> １．完整索引</h3>
-<p>直接给 email 字段加上索引</p>
+<h3 id="１．完整索引"><a href="#１．完整索引" class="headerlink" title="１．完整索引"></a>１．完整索引</h3><p>直接给 email 字段加上索引</p>
 <figure class="highlight gams"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; alert <span class="keyword">table</span> Suser <span class="comment">add index index1(email)</span>;</span><br></pre></td></tr></table></figure>
 <p>该语句创建的 index1 索引，包含了每个记录的整个字符串，索引示意图如下：</p>
 <img src="/2019/03/01/MySQL-字符串加索引的方法/完整索引.jpg" title="完整索引示意图">
 <p><strong>index1 执行顺序如下：</strong></p>
 <ul>
-<li>从 index1 索引树找到满足索引值是 ‘zhangssxyz@xxx.com’ 的记录，取得 ID2的值；</li>
+<li>从 index1 索引树找到满足索引值是 <a href="mailto:&#39;zhangssxyz@xxx.com" target="_blank" rel="noopener">&#39;zhangssxyz@xxx.com</a>‘ 的记录，取得 ID2的值；</li>
 <li>到该主键上插到主键值是 ID2 的行，判断 email 的值是正确的，将这行记录加入结果集；</li>
-<li>取 index1 索引树上刚刚查到的位置的下一条记录，发现不满足 email=‘zhangssxyz@xxx.com’ 的条件，循环结束。</li>
+<li>取 index1 索引树上刚刚查到的位置的下一条记录，发现不满足 <a href="mailto:email=&#39;zhangssxyz@xxx.com" target="_blank" rel="noopener">email=&#39;zhangssxyz@xxx.com</a>‘ 的条件，循环结束。</li>
 </ul>
 <p>这个过程中，只需要回主键索引取一次记录，所以系统只认为扫描了一行。</p>
-<h3 id="2-前缀索引"><a class="markdownIt-Anchor" href="#2-前缀索引"></a> ２． 前缀索引</h3>
-<p>将某个字段的前ｎ位设为索引，下面语句创建 email(6) 索引结构</p>
+<h3 id="２．-前缀索引"><a href="#２．-前缀索引" class="headerlink" title="２． 前缀索引"></a>２． 前缀索引</h3><p>将某个字段的前ｎ位设为索引，下面语句创建 email(6) 索引结构</p>
 <figure class="highlight gams"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; alert <span class="keyword">table</span> SUser <span class="comment">add index index2(email(6))</span>;</span><br></pre></td></tr></table></figure>
 <p>该语句创建的 index2 索引，对于每个记录只取了６个字节，索引示意图如下：</p>
 <img src="/2019/03/01/MySQL-字符串加索引的方法/前缀索引.jpg" title="前缀索引示意图">
 <p><strong>index2 执行顺序如下：</strong></p>
 <ul>
 <li>从 index2 索引树找到满足索引值是 ‘zhangs’ 的记录，找到第一个是 ID1;</li>
-<li>到主键上查到主键值是 ID1 的行，判断 email 的值不是 ‘zhangssxyz@xxx.com’，这行丢弃</li>
+<li>到主键上查到主键值是 ID1 的行，判断 email 的值不是 <a href="mailto:&#39;zhangssxyz@xxx.com" target="_blank" rel="noopener">&#39;zhangssxyz@xxx.com</a>‘，这行丢弃</li>
 <li>取 index2 上刚刚查到的位置的下一条记录，发现仍然是 ‘zhangs’, 取出 ID2，再到 ID 索引上取整行然后判断，这次值对了，将这行记录加入结果集；</li>
 <li>重复上一步，直到在 index2 上取到的值不是 ‘zhangs’ 时，循环结束。</li>
 </ul>
@@ -179,8 +177,7 @@
 <p>所以，如果使用 index1 的话，可以利用覆盖索引，从 index1 查询到结果直接返回即可，无需回到 ID 索引再去查一次。而如果使用 index2 的话，就不得不回到 ID 索引再去判断 email 字段的值。</p>
 <p>即使将 index2 的定义修改为 email(18) 的前缀索引，这时候虽然 index2 包含了所有的信息，但是 InnoDB还是要回到 ID 索引再查一次，因为系统并不确定前缀索引的定义是否截断了完整信息。</p>
 <p>也就是说，<strong>使用前缀索引就用不上覆盖索引对查询性能的优化。</strong></p>
-<h3 id="3-其他方式"><a class="markdownIt-Anchor" href="#3-其他方式"></a> 3. 其他方式</h3>
-<p>对于邮箱这样的字段来说，使用前缀索引的效果可能还不粗，但是遇到前缀的区分度不够好的情况，该怎么办？</p>
+<h3 id="3-其他方式"><a href="#3-其他方式" class="headerlink" title="3. 其他方式"></a>3. 其他方式</h3><p>对于邮箱这样的字段来说，使用前缀索引的效果可能还不粗，但是遇到前缀的区分度不够好的情况，该怎么办？</p>
 <p>比如，身份证号码，共 18 位，其中前 6 位是地址码，所以同一个县的人身份证号前6位一般是相同的，因此如果对身份证号做长度为6的前缀索引，区分度极低。</p>
 <p>按照前面的方法，可能需要创建长度为12以上的前缀索引，才能满足区分度要求。但是索引选取的越长，占用的磁盘空间越大，相同的数据页能放下的索引的值越少，搜索效率也越低。</p>
 <p>那么如果确认业务需求只按照身份证号进行等值查询的需求，可以使用以下方法</p>
@@ -203,8 +200,7 @@
 <li>CPU 消耗方面，倒序方式每次读写，都需要额外调用一次 reverse 函数，而 hash 字段的方式需要额外调用一次 crc32() 函数。如果从两个函数的计算复杂度来看的话， reverse 函数额外消耗的 CPU 资源会更小点。</li>
 <li>从查询效率上看，使用 hash 字段方式的查询性能相对更稳定一些。因为 crc32 算出来的值虽然有冲突的概率，但是概率非常小，可以认为每次查询的平均扫描行接近1。而倒序存储的方式毕竟还是用的前缀索引的方式，也就是说会增加扫描行数。</li>
 </ul>
-<h3 id="总结"><a class="markdownIt-Anchor" href="#总结"></a> 总结</h3>
-<p>字符串字段创建索引总共有4种方式</p>
+<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><p>字符串字段创建索引总共有4种方式</p>
 <ol>
 <li>直接创建完整索引，这样可能比较占用空间；</li>
 <li>创建前缀索引，节省空间，但是会增加查询扫描次数，并且不能使用覆盖索引</li>
