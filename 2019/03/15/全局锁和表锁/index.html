@@ -83,7 +83,7 @@
     </div>
     
         <div id="toc" class="toc-article">
-    <ol class="toc"><li class="toc-item toc-level-3"><a class="toc-link" href="#全局锁"><span class="toc-text">全局锁</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#表级锁"><span class="toc-text">表级锁</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#表锁-lock-tables-…-read-write"><span class="toc-text">表锁 (lock tables … read/write)</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#MDL-锁"><span class="toc-text">MDL 锁</span></a></li></ol></li></ol>
+    <ol class="toc"><li class="toc-item toc-level-3"><a class="toc-link" href="#全局锁"><span class="toc-text"> 全局锁</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#表级锁"><span class="toc-text"> 表级锁</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#表锁-lock-tables-readwrite"><span class="toc-text"> 表锁 (lock tables … read/write)</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#mdl-锁"><span class="toc-text"> MDL 锁</span></a></li></ol></li></ol>
 </div>
     
 </div>
@@ -133,7 +133,8 @@
     </div>
     <div class="post-content ">
         <p>根据加锁的范围，MySQL 分为全局锁、表级锁和行锁三类。</p>
-<h3 id="全局锁"><a href="#全局锁" class="headerlink" title="全局锁"></a>全局锁</h3><p>全局锁就是针对整个数据库实例加锁。</p>
+<h3 id="全局锁"><a class="markdownIt-Anchor" href="#全局锁"></a> 全局锁</h3>
+<p>全局锁就是针对整个数据库实例加锁。</p>
 <p>MySQL 提供加全局读锁的方法：Flush tables with read lock(FTWRL)。</p>
 <p>解锁的方法：unlock tables</p>
 <p>这个命令可以使整个库处于只读状态，而数据更新语句，数据定义语句和更新类事务的提交语句将全部被阻塞。</p>
@@ -150,10 +151,13 @@
 <li>有些系统，readonly 的值被用来做其他逻辑。例如，用来判断一个库是主库还是从库。因此修改 global 变量影响更大，不建议使用。</li>
 <li>在异常处理机制有差异。如果执行 FTWRL 命令后客户端发送异常断开，那么 MySQL 会自动释放这个全局锁，整个库回到可以正常更新的状态。而将整个库设为 readonly 之后，如客户端发送异常，则数据库就会一直保持 readonly 状态，这样会导致整个库长时间处于不可写状态，风险较高。</li>
 </ul>
-<h3 id="表级锁"><a href="#表级锁" class="headerlink" title="表级锁"></a>表级锁</h3><p>表级别的锁有两种：一种是表锁，一种是元数据锁 (meta data lock, MDL)</p>
-<h4 id="表锁-lock-tables-…-read-write"><a href="#表锁-lock-tables-…-read-write" class="headerlink" title="表锁 (lock tables … read/write)"></a>表锁 (lock tables … read/write)</h4><p>可以使用 unlock tables 主动解锁，也可以在客户端断开的时候自动释放。lock tables 语法除了会限制别的线程读写外，也限定了本线程接下来的操作对象。</p>
+<h3 id="表级锁"><a class="markdownIt-Anchor" href="#表级锁"></a> 表级锁</h3>
+<p>表级别的锁有两种：一种是表锁，一种是元数据锁 (meta data lock, MDL)</p>
+<h4 id="表锁-lock-tables-readwrite"><a class="markdownIt-Anchor" href="#表锁-lock-tables-readwrite"></a> 表锁 (lock tables … read/write)</h4>
+<p>可以使用 unlock tables 主动解锁，也可以在客户端断开的时候自动释放。lock tables 语法除了会限制别的线程读写外，也限定了本线程接下来的操作对象。</p>
 <p>在没有出现更细粒度的锁的时候，表锁是最常用的处理并发的方式。而对于 InnoDB 这种支持行锁的引擎，一般不使用 lock tables 命令来控制并发，毕竟锁住整个表的影响面很大。</p>
-<h4 id="MDL-锁"><a href="#MDL-锁" class="headerlink" title="MDL 锁"></a>MDL 锁</h4><p>MDL 不需要显式使用，在访问一个表的时候会被自动加上。MDL 的作用是，保持读写的正确性。可以想象一下，如果一个查询在遍历一个表中的数据，执行期间另一个线程对这个表结构做变更，删除一列，那么多拿到的结果对不上，肯定不行。</p>
+<h4 id="mdl-锁"><a class="markdownIt-Anchor" href="#mdl-锁"></a> MDL 锁</h4>
+<p>MDL 不需要显式使用，在访问一个表的时候会被自动加上。MDL 的作用是，保持读写的正确性。可以想象一下，如果一个查询在遍历一个表中的数据，执行期间另一个线程对这个表结构做变更，删除一列，那么多拿到的结果对不上，肯定不行。</p>
 <p>因此，在 MySQL 5.5 版本引入了 MDL，当对一个表做增删改查操作的时候，加 MDL 读锁；当对表做结构变更的时候，加 MDL 写锁。</p>
 <ul>
 <li>读锁之间不互斥，可多线程同事对一张表之间增删改查</li>
@@ -171,9 +175,11 @@
 </ul>
 <p><strong>那么怎么给一个小表加字段呢？</strong></p>
 <ul>
-<li><p>先解锁长事务，事务不提交，就会一直占着 MDL 锁。在 MySQL 的 information_schema 库的 innodb_trx 表中，可以查到当前执行的事务。如果要做 DDL 变更刚好有长事务执行，可以考虑先暂停 DDL, 或者 kill 掉这个长事务。</p>
+<li>
+<p>先解锁长事务，事务不提交，就会一直占着 MDL 锁。在 MySQL 的 information_schema 库的 innodb_trx 表中，可以查到当前执行的事务。如果要做 DDL 变更刚好有长事务执行，可以考虑先暂停 DDL, 或者 kill 掉这个长事务。</p>
 </li>
-<li><p>假设是个热点表，请求频繁。可以在 alter table 语句设置等待时间，如果在指定的等待时间里面能够拿到 MDL 写锁最好，拿不到也不要阻塞后面的业务语句，先放弃。之后开发人员再通过重试命令重复这个过程。</p>
+<li>
+<p>假设是个热点表，请求频繁。可以在 alter table 语句设置等待时间，如果在指定的等待时间里面能够拿到 MDL 写锁最好，拿不到也不要阻塞后面的业务语句，先放弃。之后开发人员再通过重试命令重复这个过程。</p>
 <figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">ALTER</span> <span class="keyword">TABLE</span> tbl_name <span class="keyword">NOWAIT</span> <span class="keyword">add</span> <span class="keyword">column</span> ...</span><br><span class="line"><span class="keyword">ALTER</span> <span class="keyword">TABLE</span> tbl_name <span class="keyword">WAIT</span> N <span class="keyword">add</span> <span class="keyword">column</span> ...</span><br></pre></td></tr></table></figure>
 </li>
 </ul>

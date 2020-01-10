@@ -83,7 +83,7 @@
     </div>
     
         <div id="toc" class="toc-article">
-    <ol class="toc"><li class="toc-item toc-level-3"><a class="toc-link" href="#redo-log-重做日志"><span class="toc-text">redo log (重做日志)</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#binlog-归档日志"><span class="toc-text">binlog (归档日志)</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#两阶段提交"><span class="toc-text">两阶段提交</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#总结"><span class="toc-text">总结</span></a></li></ol>
+    <ol class="toc"><li class="toc-item toc-level-3"><a class="toc-link" href="#redo-log-重做日志"><span class="toc-text"> redo log (重做日志)</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#binlog-归档日志"><span class="toc-text"> binlog (归档日志)</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#两阶段提交"><span class="toc-text"> 两阶段提交</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#总结"><span class="toc-text"> 总结</span></a></li></ol>
 </div>
     
 </div>
@@ -145,7 +145,8 @@
 <li>执行器进行具体执行，找到这一行，然后更新</li>
 </ol>
 <p>以上只是基本链路，MySQL 执行更新还涉及两个日志模块，分别是 redolog 和 binlog。</p>
-<h3 id="redo-log-重做日志"><a href="#redo-log-重做日志" class="headerlink" title="redo log (重做日志)"></a>redo log (重做日志)</h3><p>在《孔乙己》这篇文章中，酒店掌柜有个专门的黑板来记录客人的赊账记录。如果赊账的人多，他会记在黑板上，如果赊账的人过多，黑板总会记不下，掌柜一定得擦掉黑板，把赊账的记录写入专门记录赊账的记账本。</p>
+<h3 id="redo-log-重做日志"><a class="markdownIt-Anchor" href="#redo-log-重做日志"></a> redo log (重做日志)</h3>
+<p>在《孔乙己》这篇文章中，酒店掌柜有个专门的黑板来记录客人的赊账记录。如果赊账的人多，他会记在黑板上，如果赊账的人过多，黑板总会记不下，掌柜一定得擦掉黑板，把赊账的记录写入专门记录赊账的记账本。</p>
 <p>如果有人赊账或还帐，掌柜一般有两种做法：</p>
 <ul>
 <li>直接记录在账本上</li>
@@ -168,7 +169,8 @@
 <li>如果 write pos 追上了 checkpoint，表示 redo log 满了，这时候不能执行新的更新，得停新来先擦掉一些记录，把 checkpoint 推进一下。</li>
 </ul>
 <p>有了 redo log，InnoDB 就可以保证即使数据库发生异常重启，之前提交的记录都不会丢失，这个叫 <strong>crash-safe。</strong></p>
-<h3 id="binlog-归档日志"><a href="#binlog-归档日志" class="headerlink" title="binlog (归档日志)"></a>binlog (归档日志)</h3><p>MySQL 整体看来，其实就两块：</p>
+<h3 id="binlog-归档日志"><a class="markdownIt-Anchor" href="#binlog-归档日志"></a> binlog (归档日志)</h3>
+<p>MySQL 整体看来，其实就两块：</p>
 <ul>
 <li>一块是 Server 层，主要做的是 MySQL 功能层面的事情；</li>
 <li>一块是引擎层，负责存储相关的事宜。</li>
@@ -178,7 +180,7 @@
 <ul>
 <li>redo log 是 InnoDB 引擎特有的；binlog 是 MySQL 的 Server 层实现的，所有的引擎都可以用。</li>
 <li>redo log 是物理日志，记录的是 “在这个数据页上做了什么修改”；binlog 是逻辑日志，记录的是这个语句的原始逻辑，比如 “给 ID=2 这一行的 c 字段加 1”。</li>
-<li>redo log 是循环写的，空间固定会用完；binlog 是可以追加写入的。”追加写” 是指 binlog 文件写到一定大小后会切换到下一个，并不会覆盖以前的日志。</li>
+<li>redo log 是循环写的，空间固定会用完；binlog 是可以追加写入的。“追加写” 是指 binlog 文件写到一定大小后会切换到下一个，并不会覆盖以前的日志。</li>
 </ul>
 <p>所以执行器和 InooDB 引擎在执行简单的 update 语句时内部流程如下。</p>
 <img src="/2019/03/05/MySQL-更新语句怎么执行的/执行update.png" title="执行update">
@@ -190,16 +192,23 @@
 <li>执行器调用引擎的提交事务接口，引擎把刚刚写入的 redo log 改成提交 (commit) 状态，更新完成。</li>
 </ol>
 <p>由上可知，最后是三步将 redo log 的写入拆成了两个步骤：prepare 和 commit。这就是“两阶段提交”。</p>
-<h3 id="两阶段提交"><a href="#两阶段提交" class="headerlink" title="两阶段提交"></a>两阶段提交</h3><p>目的：是为了让两份日志之间的逻辑一致。</p>
+<h3 id="两阶段提交"><a class="markdownIt-Anchor" href="#两阶段提交"></a> 两阶段提交</h3>
+<p>目的：是为了让两份日志之间的逻辑一致。</p>
 <p>由于 redo log 和 binlog 是两个独立的逻辑，如果不用两阶段提交，要么先写 redo log，要么先写 binlog，会出现以下状况。(仍然用前面的例子)</p>
 <ol>
-<li><p><strong>先写 redo log 后写 binlog。</strong>假设写完了 redo log，binlog 还没写完崩溃，MySQL 异常重启。由于 redo log有崩溃恢复数据的能力，所以恢复后 c 的值仍然是 1 。<br>但是由于 binlog 没写完就 crash 了，这个时候 binlog 里面就没有记录这个语句。因此之后备份日志的时候，存起来的 binlog 没有这条语句。<br>然后如果用这个 binlog 恢复临时库的话，由于这个语句的 binlog 丢失，这个临时库就会少了这一次更新，恢复出来的这一行 c 的值就是 0，与原酷的值不同。</p>
+<li>
+<p>**先写 redo log 后写 binlog。**假设写完了 redo log，binlog 还没写完崩溃，MySQL 异常重启。由于 redo log有崩溃恢复数据的能力，所以恢复后 c 的值仍然是 1 。<br>
+但是由于 binlog 没写完就 crash 了，这个时候 binlog 里面就没有记录这个语句。因此之后备份日志的时候，存起来的 binlog 没有这条语句。<br>
+然后如果用这个 binlog 恢复临时库的话，由于这个语句的 binlog 丢失，这个临时库就会少了这一次更新，恢复出来的这一行 c 的值就是 0，与原酷的值不同。</p>
 </li>
-<li><p><strong>先写 binlog 后写 redo log。</strong>如果在 binlog 写完之后 crash，由于 redo log 还没写，崩溃恢复以后这个事务无效，所以这一行 c 的值是 0。但是 binlog 里面已经记录了 “把 c 从 0 改为 1”这个日志。所以之后 binlog 来恢复的时候就多了一个事务，恢复出来的 c 的值就是 1，与原库的值不同。</p>
+<li>
+<p>**先写 binlog 后写 redo log。**如果在 binlog 写完之后 crash，由于 redo log 还没写，崩溃恢复以后这个事务无效，所以这一行 c 的值是 0。但是 binlog 里面已经记录了 “把 c 从 0 改为 1”这个日志。所以之后 binlog 来恢复的时候就多了一个事务，恢复出来的 c 的值就是 1，与原库的值不同。</p>
 </li>
 </ol>
-<p>由上可知，不使用两阶段提交，那么数据库状态有可能和它的日志恢复出来的库状态不一致。<br>redo log 和 binlog 都可以用于表示事务提交的状态，而两阶段提交就是让两个状态保持逻辑上的一致。</p>
-<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><ul>
+<p>由上可知，不使用两阶段提交，那么数据库状态有可能和它的日志恢复出来的库状态不一致。<br>
+redo log 和 binlog 都可以用于表示事务提交的状态，而两阶段提交就是让两个状态保持逻辑上的一致。</p>
+<h3 id="总结"><a class="markdownIt-Anchor" href="#总结"></a> 总结</h3>
+<ul>
 <li>redo log 用于保证 crash-safe 能力。innodb_flush_log_at_trx_commit 这个参数设为 1 的时候，表示每次事务的 redo log 都直接持久化到磁盘。建议设为 1，可以保证 MySQL 异常重启之后数据不丢失。</li>
 <li>sync_binlog 这个参数设为 1 的时候，表示每次事务的 binlog 都持久化到磁盘。同样建议设为 1，可以保证 MySQL 异常重启后数据不丢失。</li>
 </ul>

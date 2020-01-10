@@ -137,8 +137,9 @@
 <p>此时有条 SQL 语句：</p>
 <figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> city,<span class="keyword">name</span>,age <span class="keyword">from</span> t <span class="keyword">where</span> city=<span class="string">'杭州'</span> <span class="keyword">order</span> <span class="keyword">by</span> <span class="keyword">name</span> <span class="keyword">limit</span> <span class="number">1000</span> ;</span><br></pre></td></tr></table></figure>
 <p>执行这条 SQL 语句可能存在两种排序，分别是全字段排序和 rowid 排序。</p>
-<h3 id="全字段排序"><a href="#全字段排序" class="headerlink" title="全字段排序"></a>全字段排序</h3><p>为避免全表扫描，需要在 city 字段增加索引。<br>explain 命令查看这个语句的执行情况。</p>
-<img src="/2019/04/09/order-by执行流程/explain.png" title="图1使用explain命令查看语句执行情况">
+<h3 id="全字段排序"><a href="#全字段排序" class="headerlink" title="全字段排序"></a>全字段排序</h3><p>为避免全表扫描，需要在 city 字段增加索引。</p>
+<p>explain 命令查看这个语句的执行情况。</p>
+<img src="/2019/04/09/order-by执行流程/explain.png" width="600" height="50" title="图1使用explain命令查看语句执行情况">
 <p>根据执行情况发现，Extra 字段中到”Using filesort”表示排序，MySQL 会给每一个线程分配一块内存进行排序，称为 sort_buffer。</p>
 <p>语句执行流程：</p>
 <ol>
@@ -150,7 +151,7 @@
 <li>对 sort_buffer 中的数据按照字段 name 做快速排序；</li>
 <li>按照排序结果前 1000 行返回给客户端。</li>
 </ol>
-<img src="/2019/04/09/order-by执行流程/全字段排序示意图.jpg" title="全字段排序示意图">
+<img src="/2019/04/09/order-by执行流程/全字段排序示意图.jpg" width="600" height="400" title="全字段排序示意图">
 <p>以上称为<strong>全字段排序</strong>，图中排序的动作可能在内存排序，也可能需要使用外部排序，这取决于排序所需要的内存和参数 sort_buffer_size。</p>
 <p>sort_buffer_size 是 MySQL 为排序开辟的内存的大小。如果排序的数据量大于 sort_buffer_size，排序就在内存中完成，否则不得不利用磁盘临时文件辅助排序。</p>
 <h4 id="确认排序是否使用临时文件的方法"><a href="#确认排序是否使用临时文件的方法" class="headerlink" title="确认排序是否使用临时文件的方法"></a>确认排序是否使用临时文件的方法</h4><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* 打开 optimizer_trace，只对本线程有效 */</span></span><br><span class="line"><span class="keyword">SET</span> optimizer_trace=<span class="string">'enabled=on'</span>;</span><br><span class="line"><span class="comment">/* @a 保存 Innodb_rows_read 的初始值 */</span></span><br><span class="line"><span class="keyword">select</span> VARIABLE_VALUE <span class="keyword">into</span> @a <span class="keyword">from</span> performance_schema.session_status <span class="keyword">where</span> variable_name = <span class="string">'Innodb_rows_read'</span>;</span><br><span class="line"> </span><br><span class="line"><span class="comment">/* 执行语句 */</span></span><br><span class="line"><span class="keyword">select</span> city, <span class="keyword">name</span>,age <span class="keyword">from</span> t <span class="keyword">where</span> city=<span class="string">'杭州'</span> <span class="keyword">order</span> <span class="keyword">by</span> <span class="keyword">name</span> <span class="keyword">limit</span> <span class="number">1000</span>;</span><br><span class="line"> </span><br><span class="line"><span class="comment">/* 查看 OPTIMIZER_TRACE 输出 */</span></span><br><span class="line"><span class="keyword">SELECT</span> * <span class="keyword">FROM</span> <span class="string">`information_schema`</span>.<span class="string">`OPTIMIZER_TRACE`</span>\G</span><br><span class="line"> </span><br><span class="line"><span class="comment">/* @b 保存 Innodb_rows_read 的当前值 */</span></span><br><span class="line"><span class="keyword">select</span> VARIABLE_VALUE <span class="keyword">into</span> @b <span class="keyword">from</span> performance_schema.session_status <span class="keyword">where</span> variable_name = <span class="string">'Innodb_rows_read'</span>;</span><br><span class="line"> </span><br><span class="line"><span class="comment">/* 计算 Innodb_rows_read 差值 */</span></span><br><span class="line"><span class="keyword">select</span> @b-@a;</span><br></pre></td></tr></table></figure>
@@ -178,7 +179,7 @@
 <li>对 sort_buffer 中的数据按照 name 排序；</li>
 <li>遍历排序结果，取前 1000 行数据，并按照 id 值，从原表中取出 city、name 和 age 三个字段返回给客户端。</li>
 </ol>
-<p>这就是 <strong>rewid 排序</strong> ，示意图如下：<br><img src="/2019/04/09/order-by执行流程/rewid排序.jpg" title="rewid排序s"></p>
+<p>这就是 <strong>rewid 排序</strong> ，示意图如下：<br><img src="/2019/04/09/order-by执行流程/rewid排序.jpg" width="600" height="400" title="rewid排序s"></p>
 <p><strong>对比全字段排序，rewid 排序多访问了一次表的主键索引。</strong></p>
 <p>“结果集”是一个逻辑概念，实际上 MySQL 服务端从排序后的 sort_buffer 中依次取出 id，然后到原表查到 city、name 和 age 这三个字段的结果，不需要在服务端再耗费内存存储结果，是直接返回给客户端的。</p>
 <h4 id="执行-select-b-a-的结果"><a href="#执行-select-b-a-的结果" class="headerlink" title="执行 select @b-@a 的结果"></a>执行 select @b-@a 的结果</h4><img src="/2019/04/09/order-by执行流程/rowid排序的OPTIMIZER_TRACE部分输出.png" title="rowid排序的OPTIMIZER_TRACE部分输出">
@@ -195,7 +196,7 @@
 <p><strong>可见 MySQL 排序是一个成本比较高的操作。但是并不是所有的 order by 语句都需要排序操作的。MySQL 只所以需要生成临时表，并且在临时表上做排序操作，其原因是原来的数据是无序的。</strong></p>
 <p>如果保证从 city 这个索引的行，天然保持按 name 字段递增排序，就可以不用再排序了。</p>
 <p>如果在表上创建一个 city 和 name 的联合索引：<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">alter</span> <span class="keyword">table</span> t <span class="keyword">add</span> <span class="keyword">index</span> city_user(city, <span class="keyword">name</span>);</span><br></pre></td></tr></table></figure></p>
-<img src="/2019/04/09/order-by执行流程/city和name联合索引.png" title="city和name联合索引">
+<img src="/2019/04/09/order-by执行流程/city和name联合索引.png" width="600" height="400" title="city和name联合索引">
 <p>在这个索引中，依然可以使用树搜索的方式去定位到第一个满足 city=”杭州”的记录，并且确保了接下来按顺序去取下一条记录遍历中，只要 city 的值是杭州，name 就一定是有序的。</p>
 <p>查询流程如下：</p>
 <ol>
@@ -204,8 +205,8 @@
 <li>从索引 (city,name) 取下一个记录主键 id；</li>
 <li>重复步骤 2、3，直到查到第 1000 条记录，或者是不满足 city=’杭州’条件时循环结束</li>
 </ol>
-<img src="/2019/04/09/order-by执行流程/引入(city,name)联合索引.jpg" title="引入(city,name)联合索引">
-<p>可以看出这个查询，不需要临时表，不需要排序<br><img src="/2019/04/09/order-by执行流程/explain2.png" title="引入(city,name)联合查询explain执行计划"></p>
+<img src="/2019/04/09/order-by执行流程/引入(city,name)联合索引.jpg" width="600" height="400" title="引入(city,name)联合索引">
+<p>可以看出这个查询，不需要临时表，不需要排序<br><img src="/2019/04/09/order-by执行流程/explain2.png" width="600" height="60" title="引入(city,name)联合查询explain执行计划"></p>
 <p>从图中可以看到，Extra 字段中没有 Using filesort 了，也就是不需要排序了。而且由于 (city,name) 这个联合索引本身有序，所以这个查询也不用把 4000 行全都读一遍，只要找到满足条件的前 1000 条记录就可以退出了。也就是说，在我们这个例子里，只需要扫描 1000 次。</p>
 <p><strong>利用覆盖索引继续优化</strong><br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">alter</span> <span class="keyword">table</span> t <span class="keyword">add</span> <span class="keyword">index</span> city_user_age(city, <span class="keyword">name</span>, age);</span><br></pre></td></tr></table></figure></p>
 <p>查询流程如下：</p>
@@ -214,8 +215,8 @@
 <li>从索引 (city,name,age) 取下一个记录，同样取出这三个字段的值，作为结果集的一部分返回；</li>
 <li>重复执行步骤 2，直到不满足条件或者查到第 1000 条记录为止。</li>
 </ol>
-<img src="/2019/04/09/order-by执行流程/引入(city,name,age)联合索引后，查询语句的执行流程.jpg" title="引入(city,name,age)联合索引后，查询语句的执行流程">
-<img src="/2019/04/09/order-by执行流程/引入(city,name,age)联合索引后，查询语句的执行计划.png" title="引入(city,name,age)联合索引后，查询语句的执行计划">
+<img src="/2019/04/09/order-by执行流程/引入(city,name,age)联合索引后，查询语句的执行流程.jpg" width="600" height="400" title="引入(city,name,age)联合索引后 查询语句的执行流程">
+<img src="/2019/04/09/order-by执行流程/引入(city,name,age)联合索引后，查询语句的执行计划.png" width="600" height="60" title="引入(city,name,age)联合索引后 查询语句的执行计划">
 <p>Extra 字段里面多了“Using index”，表示的就是使用了覆盖索引，性能上会快很多。</p>
 
         

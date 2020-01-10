@@ -83,7 +83,7 @@
     </div>
     
         <div id="toc" class="toc-article">
-    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#前言"><span class="toc-text">前言</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#PHP-自动加载功能"><span class="toc-text">PHP 自动加载功能</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#为什么需要自动加载功能"><span class="toc-text">为什么需要自动加载功能</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#autoload-魔术方法-（PHP-7-2-废止）"><span class="toc-text">__autoload( ) 魔术方法 （PHP 7.2 废止）</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#spl-autoload-register-方法"><span class="toc-text">spl_autoload_register( ) 方法</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#PSR-4-自动加载器策略"><span class="toc-text">PSR-4 自动加载器策略</span></a></li></ol></li></ol></li></ol>
+    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#前言"><span class="toc-text"> 前言</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#php-自动加载功能"><span class="toc-text"> PHP 自动加载功能</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#为什么需要自动加载功能"><span class="toc-text"> 为什么需要自动加载功能</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#__autoload-魔术方法-php-72-废止"><span class="toc-text"> __autoload( ) 魔术方法 （PHP 7.2 废止）</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#spl_autoload_register-方法"><span class="toc-text"> spl_autoload_register( ) 方法</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#psr-4-自动加载器策略"><span class="toc-text"> PSR-4 自动加载器策略</span></a></li></ol></li></ol></li></ol>
 </div>
     
 </div>
@@ -132,13 +132,18 @@
 </span>
     </div>
     <div class="post-content ">
-        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>本人主要总结 PHP 自动加载的功能，内容涉及 SPL 函数库，PSR 标准，Composer 自动加载。</p>
+        <h2 id="前言"><a class="markdownIt-Anchor" href="#前言"></a> 前言</h2>
+<p>本人主要总结 PHP 自动加载的功能，内容涉及 SPL 函数库，PSR 标准，Composer 自动加载。</p>
 <hr>
-<h3 id="PHP-自动加载功能"><a href="#PHP-自动加载功能" class="headerlink" title="PHP 自动加载功能"></a>PHP 自动加载功能</h3><blockquote>
+<h3 id="php-自动加载功能"><a class="markdownIt-Anchor" href="#php-自动加载功能"></a> PHP 自动加载功能</h3>
+<blockquote>
 <p>自动加载是指，PHP 解释器在运行时按需自动找到并加载 PHP 类的过程。</p>
 </blockquote>
-<h4 id="为什么需要自动加载功能"><a href="#为什么需要自动加载功能" class="headerlink" title="为什么需要自动加载功能"></a>为什么需要自动加载功能</h4><p>PHP5 后，PHP完全支持面向对象编程。在面向对象编程中，开发者必须为每个类都建立一个 PHP 文件。这会带来一个烦恼：每个脚本的开头，都需要包含（include）一个长长的列表（每个类都有个文件）。</p>
-<h4 id="autoload-魔术方法-（PHP-7-2-废止）"><a href="#autoload-魔术方法-（PHP-7-2-废止）" class="headerlink" title="__autoload( ) 魔术方法 （PHP 7.2 废止）"></a>__autoload( ) 魔术方法 （PHP 7.2 废止）</h4><p>为了避免每个类文件都要 include/require 一大串类，PHP5 之后提供了类的自动加载机制(autoloader)。<br>这种加载机制有以下几个优点。</p>
+<h4 id="为什么需要自动加载功能"><a class="markdownIt-Anchor" href="#为什么需要自动加载功能"></a> 为什么需要自动加载功能</h4>
+<p>PHP5 后，PHP完全支持面向对象编程。在面向对象编程中，开发者必须为每个类都建立一个 PHP 文件。这会带来一个烦恼：每个脚本的开头，都需要包含（include）一个长长的列表（每个类都有个文件）。</p>
+<h4 id="__autoload-魔术方法-php-72-废止"><a class="markdownIt-Anchor" href="#__autoload-魔术方法-php-72-废止"></a> __autoload( ) 魔术方法 （PHP 7.2 废止）</h4>
+<p>为了避免每个类文件都要 include/require 一大串类，PHP5 之后提供了类的自动加载机制(autoloader)。<br>
+这种加载机制有以下几个优点。</p>
 <blockquote>
 <ol>
 <li>用户可以有需要再加载类，而不是一开始就全部加载进来。</li>
@@ -148,11 +153,13 @@
 <p>PHP5 后，当加载 PHP 类时，如果类所在的文件没有被包含或类名出错，Zend引擎会自动调用 <a href="http://php.net/manual/zh/function.autoload.php" target="_blank" rel="noopener">__autoload( )</a> 函数来加载。此函数需要用户自己实现。下面是个简单的例子。</p>
 <figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//__autoload( ) 使用实例</span></span><br><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">__autoload</span><span class="params">($className)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">true$fileName = <span class="string">"./"</span> . $className . <span class="string">".php"</span>;</span><br><span class="line">true<span class="keyword">include_once</span>($fileName);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>从这个简单的例子可知，__autoload( ) 函数讲类名和文件名对应起来，两者最重要的是类名和文件的映射规则。</p>
-<h4 id="spl-autoload-register-方法"><a href="#spl-autoload-register-方法" class="headerlink" title="spl_autoload_register( ) 方法"></a>spl_autoload_register( ) 方法</h4><blockquote>
+<h4 id="spl_autoload_register-方法"><a class="markdownIt-Anchor" href="#spl_autoload_register-方法"></a> spl_autoload_register( ) 方法</h4>
+<blockquote>
 <p>做项目时我们引入大量的第三方库，每个库都有自己的映射规则。如果要实现自动加载，__autoloader( ) 函数必须实现每条规则，由于函数全局唯一的特性，这将导致函数臃肿、难以维护、容易出错。</p>
 </blockquote>
 <p>为了解决这个问题，PHP 提供了 <a href="http://php.net/manual/zh/function.spl-autoload-register.php" target="_blank" rel="noopener">sql_autoload_register()</a> 函数，该函数支持任意数量的自动加载器，所有的自动加载器都存放在autoload 函数的队列内。当 PHP 找不到类名，PHP 会自动调用这个队列，执行队列内的自定义的 __autoloader() 函数，实现自动加载功能。</p>
-<h4 id="PSR-4-自动加载器策略"><a href="#PSR-4-自动加载器策略" class="headerlink" title="PSR-4 自动加载器策略"></a>PSR-4 自动加载器策略</h4><blockquote>
+<h4 id="psr-4-自动加载器策略"><a class="markdownIt-Anchor" href="#psr-4-自动加载器策略"></a> PSR-4 自动加载器策略</h4>
+<blockquote>
 <p>PSR 是 PHP Standards Recommendation 的简称。PSR- 开头，后面+一个数字。都是 PHP-FIG 制定的推荐规范，用于解决大多数 PHP 框架经常会遇到的某个具体问题。 PHP 框架无需频繁解决相同的问题，大家只需使用共同的方案解决。</p>
 </blockquote>
 <blockquote>
