@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta name="generator" content="Hexo 3.9.0">
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="google-site-verification" content="xBT4GhYoi5qRD5tr338pgPM5OWHHIDR6mNg1a3euekI">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="stevenv的学习笔记">
+    <meta name="keyword" content>
+    <link rel="shortcut icon" href="/img/favicon.ico">
+
+    <title>
+        
+        PHP 自动加载分析 - undefined
+        
+    </title>
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/css/aircloud.css">
+    <link rel="stylesheet" href="/css/gitment.css">
+    <!--<link rel="stylesheet" href="https://imsun.github.io/gitment/style/default.css">-->
+    <link href="//at.alicdn.com/t/font_620856_pl6z7sid89qkt9.css" rel="stylesheet" type="text/css">
+    <!-- ga & ba script hoook -->
+    <script></script>
+<link rel="alternate" href="/atom.xml" title="stevenv的学习笔记" type="application/atom+xml">
+</head>
+
+<body>
+
+<div class="site-nav-toggle" id="site-nav-toggle">
+    <button>
+        <span class="btn-bar"></span>
+        <span class="btn-bar"></span>
+        <span class="btn-bar"></span>
+    </button>
+</div>
+
+<div class="index-about">
+    <i>  </i>
+</div>
+
+<div class="index-container">
+    
+    <div class="index-left">
+        
+<div class="nav" id="nav">
+    <div class="avatar-name">
+        <div class="avatar ">
+            <img src="/avatar.jpg" />
+        </div>
+        <div class="name">
+            <i>stevenv</i>
+        </div>
+    </div>
+    <div class="contents" id="nav-content">
+        <ul>
+            <li >
+                <a href="/">
+                    <i class="iconfont icon-shouye1"></i>
+                    <span>HOME</span>
+                </a>
+            </li>
+            <li >
+                <a href="/tags">
+                    <i class="iconfont icon-biaoqian1"></i>
+                    <span>TAGS</span>
+                </a>
+            </li>
+            <li >
+                <a href="/archives">
+                    <i class="iconfont icon-guidang2"></i>
+                    <span>ARCHIVES</span>
+                </a>
+            </li>
+            <li >
+                <a href="/about/">
+                    <i class="iconfont icon-guanyu2"></i>
+                    <span>ABOUT</span>
+                </a>
+            </li>
+            
+        </ul>
+    </div>
+    
+        <div id="toc" class="toc-article">
+    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#前言"><span class="toc-text">前言</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#PHP-自动加载功能"><span class="toc-text">PHP 自动加载功能</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#为什么需要自动加载功能"><span class="toc-text">为什么需要自动加载功能</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#autoload-魔术方法-（PHP-7-2-废止）"><span class="toc-text">__autoload( ) 魔术方法 （PHP 7.2 废止）</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#spl-autoload-register-方法"><span class="toc-text">spl_autoload_register( ) 方法</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#PSR-4-自动加载器策略"><span class="toc-text">PSR-4 自动加载器策略</span></a></li></ol></li></ol></li></ol>
+</div>
+    
+</div>
+
+
+<div class="search-field" id="search-field">
+    <div class="search-container">
+        <div class="search-input">
+            <span id="esc-search"> <i class="icon-fanhui iconfont"></i></span>
+            <input id="search-input"/>
+            <span id="begin-search">search</span>
+        </div>
+        <div class="search-result-container" id="search-result-container">
+
+        </div>
+    </div>
+</div>
+
+        <div class="index-about-mobile">
+            <i>  </i>
+        </div>
+    </div>
+    
+    <div class="index-middle">
+        <!-- Main Content -->
+        
+
+
+<div class="post-container">
+    <div class="post-title">
+        PHP 自动加载分析
+    </div>
+
+    <div class="post-meta">
+        <span class="attr">Post：<span>2017-12-21 14:54:07</span></span>
+        
+        <span class="attr">Tags：/
+        
+        <a class="tag" href="/tags/#PHP学习笔记" title="PHP学习笔记">PHP学习笔记</a>
+        <span>/</span>
+        
+        
+        </span>
+        <span class="attr">Visit：<span id="busuanzi_value_page_pv"></span>
+</span>
+</span>
+    </div>
+    <div class="post-content ">
+        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>本人主要总结 PHP 自动加载的功能，内容涉及 SPL 函数库，PSR 标准，Composer 自动加载。</p>
+<hr>
+<h3 id="PHP-自动加载功能"><a href="#PHP-自动加载功能" class="headerlink" title="PHP 自动加载功能"></a>PHP 自动加载功能</h3><blockquote>
+<p>自动加载是指，PHP 解释器在运行时按需自动找到并加载 PHP 类的过程。</p>
+</blockquote>
+<h4 id="为什么需要自动加载功能"><a href="#为什么需要自动加载功能" class="headerlink" title="为什么需要自动加载功能"></a>为什么需要自动加载功能</h4><p>PHP5 后，PHP完全支持面向对象编程。在面向对象编程中，开发者必须为每个类都建立一个 PHP 文件。这会带来一个烦恼：每个脚本的开头，都需要包含（include）一个长长的列表（每个类都有个文件）。</p>
+<h4 id="autoload-魔术方法-（PHP-7-2-废止）"><a href="#autoload-魔术方法-（PHP-7-2-废止）" class="headerlink" title="__autoload( ) 魔术方法 （PHP 7.2 废止）"></a>__autoload( ) 魔术方法 （PHP 7.2 废止）</h4><p>为了避免每个类文件都要 include/require 一大串类，PHP5 之后提供了类的自动加载机制(autoloader)。<br>这种加载机制有以下几个优点。</p>
+<blockquote>
+<ol>
+<li>用户可以有需要再加载类，而不是一开始就全部加载进来。</li>
+<li>无需考虑类的文件地址，实现了逻辑与文件分离。</li>
+</ol>
+</blockquote>
+<p>PHP5 后，当加载 PHP 类时，如果类所在的文件没有被包含或类名出错，Zend引擎会自动调用 <a href="http://php.net/manual/zh/function.autoload.php" target="_blank" rel="noopener">__autoload( )</a> 函数来加载。此函数需要用户自己实现。下面是个简单的例子。</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//__autoload( ) 使用实例</span></span><br><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">__autoload</span><span class="params">($className)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">true$fileName = <span class="string">"./"</span> . $className . <span class="string">".php"</span>;</span><br><span class="line">true<span class="keyword">include_once</span>($fileName);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>从这个简单的例子可知，__autoload( ) 函数讲类名和文件名对应起来，两者最重要的是类名和文件的映射规则。</p>
+<h4 id="spl-autoload-register-方法"><a href="#spl-autoload-register-方法" class="headerlink" title="spl_autoload_register( ) 方法"></a>spl_autoload_register( ) 方法</h4><blockquote>
+<p>做项目时我们引入大量的第三方库，每个库都有自己的映射规则。如果要实现自动加载，__autoloader( ) 函数必须实现每条规则，由于函数全局唯一的特性，这将导致函数臃肿、难以维护、容易出错。</p>
+</blockquote>
+<p>为了解决这个问题，PHP 提供了 <a href="http://php.net/manual/zh/function.spl-autoload-register.php" target="_blank" rel="noopener">sql_autoload_register()</a> 函数，该函数支持任意数量的自动加载器，所有的自动加载器都存放在autoload 函数的队列内。当 PHP 找不到类名，PHP 会自动调用这个队列，执行队列内的自定义的 __autoloader() 函数，实现自动加载功能。</p>
+<h4 id="PSR-4-自动加载器策略"><a href="#PSR-4-自动加载器策略" class="headerlink" title="PSR-4 自动加载器策略"></a>PSR-4 自动加载器策略</h4><blockquote>
+<p>PSR 是 PHP Standards Recommendation 的简称。PSR- 开头，后面+一个数字。都是 PHP-FIG 制定的推荐规范，用于解决大多数 PHP 框架经常会遇到的某个具体问题。 PHP 框架无需频繁解决相同的问题，大家只需使用共同的方案解决。</p>
+</blockquote>
+<blockquote>
+<p>如今，现代的 PHP 组件和框架都符合同一个自动加载标准。这意味着我们只需一个自动加载器就能混合搭配多个PHP组件。</p>
+</blockquote>
+<blockquote>
+<p>PSR-4 用于在运行时查找并加载 PHP 类、接口和性状。只建议如何使用文件系统目录结构和 PHP 命名空间组织代码。</p>
+</blockquote>
+<p>PSR-4的精髓是把命名空间的前缀和文件系统中的目录对应起来。举例如下。</p>
+<figure class="highlight taggerscript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">假设<span class="symbol">\O</span>reilly<span class="symbol">\M</span>odernPHP命名空间中的类在物理文件系统的src/目录中</span><br><span class="line"></span><br><span class="line">"<span class="symbol">\O</span>reilly<span class="symbol">\M</span>odernPHP" =&gt; "src/"</span><br><span class="line"></span><br><span class="line">"<span class="symbol">\O</span>reilly<span class="symbol">\M</span>odernPHP<span class="symbol">\C</span>hapter1<span class="symbol">\E</span>xample" =&gt; "src/Chapter1/Example.php"</span><br><span class="line"></span><br><span class="line">命名空间的前缀可以是顶级命名空间，也可以是顶级命名空间+任意一个子命名空间</span><br></pre></td></tr></table></figure>
+<p>由上可知命名空间前缀对应于文件系统的基目录，命名空间前缀的子命名空间对应这个基目录的子目录。</p>
+<p>接下我们看看PSR-4 自动加载器的示例代码。</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line"><span class="php"><span class="meta">&lt;?php</span></span></span><br><span class="line">/**</span><br><span class="line"> * 举例说明如何实现项目专用的自动加载器</span><br><span class="line"> * </span><br><span class="line"> * 使用 SPL 注册这个自动加载函数后，遇到下述代码时这个函数</span><br><span class="line"> * 会尝试从 /path/to/project/src/Baz/Qux.php 文件中加载</span><br><span class="line"> * </span><br><span class="line"> * \Foo\Bar\Baz\Qux 类</span><br><span class="line"> *  new \Foo\Bar\Baz\Qux;     </span><br><span class="line"> *  </span><br><span class="line"> * @param string $class 完全限定的类名</span><br><span class="line"> * @return void</span><br><span class="line"><span class="php"> */</span></span><br><span class="line"><span class="php">spl_autoload_register(<span class="function"><span class="keyword">function</span> <span class="params">($class)</span> </span>&#123;</span></span><br><span class="line"></span><br><span class="line"><span class="php">    <span class="comment">// 项目的命名空间前缀</span></span></span><br><span class="line"><span class="php">    $prefix = <span class="string">'Foo\\Bar\\'</span>;</span></span><br><span class="line"></span><br><span class="line"><span class="php">    <span class="comment">// 基目录</span></span></span><br><span class="line"><span class="php">    $base_dir = <span class="keyword">__DIR__</span> . <span class="string">'/src/'</span>;</span></span><br><span class="line"></span><br><span class="line"><span class="php">    <span class="comment">// 参数传入的类使用这个命名空间前缀吗?</span></span></span><br><span class="line"><span class="php">    $len = strlen($prefix);</span></span><br><span class="line"><span class="php">    <span class="keyword">if</span> (strncmp($prefix, $class, $len) !== <span class="number">0</span>) &#123;</span></span><br><span class="line"><span class="php">        <span class="comment">// 不使用交给下一个自动加载器处理</span></span></span><br><span class="line"><span class="php">        <span class="keyword">return</span>;</span></span><br><span class="line"><span class="php">    &#125;</span></span><br><span class="line"></span><br><span class="line"><span class="php">    <span class="comment">// 获取去掉前缀后的类名</span></span></span><br><span class="line"><span class="php">    $relative_class = substr($class, $len);</span></span><br><span class="line"></span><br><span class="line"><span class="php">    <span class="comment">// 把命名空间前缀替换成基目录</span></span></span><br><span class="line"><span class="php">    <span class="comment">// 在去掉前缀的类名中，把命名空间分隔符替换成目录分隔符</span></span></span><br><span class="line"><span class="php">    <span class="comment">// 然后在后面加上.php</span></span></span><br><span class="line"><span class="php">    $file = $base_dir . str_replace(<span class="string">'\\'</span>, <span class="string">'/'</span>, $relative_class) . <span class="string">'.php'</span>;</span></span><br><span class="line"></span><br><span class="line"><span class="php">    <span class="comment">// 如存在，导入</span></span></span><br><span class="line"><span class="php">    <span class="keyword">if</span> (file_exists($file)) &#123;</span></span><br><span class="line"><span class="php">        <span class="keyword">require</span> $file;</span></span><br><span class="line"><span class="php">    &#125;</span></span><br><span class="line"><span class="php">&#125;);</span></span><br></pre></td></tr></table></figure>
+<hr>
+<p>以上可知现代 PHP 自动加载策略的实现是由PSR-4 规范 + SPL 函数库共同构建。我们编写的 PSR-4 自动加载器虽然可用，但是我们自己没必要如此做。因为我们可以使用依赖管理器 Composer 自动生成的 PSR-4 自动加载器。</p>
+
+        
+        <br />
+        <div id="comment-container">
+        </div>
+        <div id="disqus_thread"></div>
+
+        <div id="lv-container">
+        </div>
+
+    </div>
+</div>
+
+    </div>
+</div>
+
+
+<footer class="footer">
+    <ul class="list-inline text-center">
+        
+        
+
+        
+
+        
+
+        
+        <li>
+            <a target="_blank"  href="https://github.com/stevenvww">
+                            <span class="fa-stack fa-lg">
+                                <i class="iconfont icon-github"></i>
+                            </span>
+            </a>
+        </li>
+        
+
+        
+
+    </ul>
+    
+    <p>
+        <span id="busuanzi_container_site_pv">
+            <span id="busuanzi_value_site_pv"></span>PV
+        </span>
+        <span id="busuanzi_container_site_uv">
+            <span id="busuanzi_value_site_uv"></span>UV
+        </span>
+        Created By <a href="https://hexo.io/">Hexo</a>  Theme <a href="https://github.com/aircloud/hexo-theme-aircloud">AirCloud</a></p>
+</footer>
+
+
+
+
+</body>
+
+<script>
+    // We expose some of the variables needed by the front end
+    window.hexo_search_path = ""
+    window.hexo_root = "/"
+    window.isPost = true
+</script>
+<script src="https://cdn.bootcss.com/jquery/3.3.1/jquery.min.js"></script>
+<script src="/js/index.js"></script>
+<script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+
+
+</html>
